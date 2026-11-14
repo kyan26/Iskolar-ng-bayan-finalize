@@ -1,0 +1,230 @@
+{% extends 'layout/base.html' %}
+{% block 'title' %}Add Scholarship{% endblock %}
+
+{% block 'content' %}
+{% load static %}
+{% include 'include/Sidebar.html' %}
+{% include 'include/ToastMessage.html' %}
+
+<div class="sm:ml-64 mt-14 p-6 flex flex-col items-center">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-bold text-white">Add Scholarship</h1>
+        <p class="text-slate-400 text-sm mt-1">Create a new scholarship program</p>
+    </div>
+
+    <div class="bg-[#1e293b] border border-[#334155] rounded-xl p-6 w-full max-w-2xl">
+        <form method="POST" onsubmit="return validateDatesOnSubmit()">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Scholarship Name</label>
+                    <input type="text" name="name" value="{{ form_data.name|default:'' }}" placeholder="e.g. Academic Excellence Award"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                    <textarea name="description" rows="3" placeholder="Scholarship description..."
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">{{ form_data.description|default:'' }}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Amount (₱)</label>
+                    <input type="number" name="amount" value="{{ form_data.amount|default:'' }}" placeholder="5000"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Slots Available</label>
+                    <input type="number" name="slots" value="{{ form_data.slots|default:'' }}" placeholder="50"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Required GPA
+                        <span class="text-slate-500 text-xs">(scholars above this are auto-rejected)</span>
+                    </label>
+                    <input type="number" name="gpa_requirement" step="0.01" min="1.00" max="5.00"
+                        value="{{ form_data.gpa_requirement|default:'' }}" placeholder="e.g. 2.50"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ form_data.start_date|default:'' }}"
+                        onchange="validateDates()"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                    <p id="startDateMsg" style="display:none; font-size:12px; margin-top:4px;"></p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">End Date</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ form_data.end_date|default:'' }}"
+                        onchange="validateDates()"
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">
+                    <p id="endDateMsg" style="display:none; font-size:12px; margin-top:4px;"></p>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Eligibility Requirements</label>
+                    <textarea name="eligibility" rows="3" placeholder="e.g. Must have GPA of 1.5 or higher..."
+                        class="w-full bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#6366f1]">{{ form_data.eligibility|default:'' }}</textarea>
+                </div>
+
+                <!-- Required Documents Section -->
+                <div class="sm:col-span-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-slate-300">Required Documents</label>
+                        <button type="button" onclick="addDocRow()"
+                            class="text-xs text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 hover:border-indigo-400 px-3 py-1 rounded-lg transition">
+                            + Add Document
+                        </button>
+                    </div>
+                    <div id="docRows" class="space-y-2">
+                        <!-- Preloaded common documents -->
+                        <div class="flex items-center gap-2 doc-row">
+                            <input type="text" name="doc_name[]" value="Transcript of Records (TOR)"
+                                class="flex-1 bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]">
+                            <label class="flex items-center gap-1 text-slate-400 text-xs whitespace-nowrap">
+                                <input type="checkbox" name="doc_required[]" value="0" checked class="accent-indigo-500"> Required
+                            </label>
+                            <button type="button" onclick="removeDocRow(this)" class="text-slate-600 hover:text-red-400 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 doc-row">
+                            <input type="text" name="doc_name[]" value="Good Moral Certificate"
+                                class="flex-1 bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]">
+                            <label class="flex items-center gap-1 text-slate-400 text-xs whitespace-nowrap">
+                                <input type="checkbox" name="doc_required[]" value="1" checked class="accent-indigo-500"> Required
+                            </label>
+                            <button type="button" onclick="removeDocRow(this)" class="text-slate-600 hover:text-red-400 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 doc-row">
+                            <input type="text" name="doc_name[]" value="Barangay Indigency Certificate"
+                                class="flex-1 bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]">
+                            <label class="flex items-center gap-1 text-slate-400 text-xs whitespace-nowrap">
+                                <input type="checkbox" name="doc_required[]" value="2" checked class="accent-indigo-500"> Required
+                            </label>
+                            <button type="button" onclick="removeDocRow(this)" class="text-slate-600 hover:text-red-400 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-slate-500 text-xs mt-2">These are the documents applicants must submit when applying for this scholarship.</p>
+                </div>
+
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 mt-6">
+                <button type="submit" class="bg-[#6366f1] hover:bg-indigo-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition">Save Scholarship</button>
+                <a href="/scholarship/list" class="bg-[#334155] hover:bg-slate-600 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition text-center block">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/calendar.css' %}">
+
+<script>
+    let docCount = 3;
+
+    function addDocRow() {
+        const container = document.getElementById('docRows');
+        const index     = docCount++;
+        const row       = document.createElement('div');
+        row.className   = 'flex items-center gap-2 doc-row';
+        row.innerHTML   = `
+            <input type="text" name="doc_name[]" placeholder="e.g. BIR Certificate"
+                class="flex-1 bg-[#0f172a] border border-[#334155] text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]">
+            <label class="flex items-center gap-1 text-slate-400 text-xs whitespace-nowrap">
+                <input type="checkbox" name="doc_required[]" value="${index}" checked class="accent-indigo-500"> Required
+            </label>
+            <button type="button" onclick="removeDocRow(this)" class="text-slate-600 hover:text-red-400 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeDocRow(btn) {
+        btn.closest('.doc-row').remove();
+    }
+
+    function validateDates() {
+        const startInput = document.getElementById('start_date');
+        const endInput   = document.getElementById('end_date');
+        const startMsg   = document.getElementById('startDateMsg');
+        const endMsg     = document.getElementById('endDateMsg');
+        const start      = startInput.value;
+        const end        = endInput.value;
+
+        startInput.style.borderColor = '';
+        startInput.style.boxShadow   = '';
+        endInput.style.borderColor   = '';
+        endInput.style.boxShadow     = '';
+        startMsg.style.display       = 'none';
+        endMsg.style.display         = 'none';
+
+        const now   = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        let valid = true;
+
+        if (start) {
+            if (start < today) {
+                startMsg.textContent   = '❌ Start date cannot be in the past.';
+                startMsg.style.cssText = 'color:#ef4444;font-size:12px;margin-top:4px;display:block;';
+                startInput.style.borderColor = '#ef4444';
+                startInput.style.boxShadow   = '0 0 0 2px rgba(239,68,68,0.3)';
+                valid = false;
+            } else {
+                startMsg.style.display       = 'none';
+                startInput.style.borderColor = '#22c55e';
+                startInput.style.boxShadow   = '0 0 0 2px rgba(34,197,94,0.3)';
+            }
+        }
+
+        if (start && end) {
+            if (start === end) {
+                endMsg.textContent   = '❌ End date cannot be the same as start date.';
+                endMsg.style.cssText = 'color:#ef4444;font-size:12px;margin-top:4px;display:block;';
+                endInput.style.borderColor = '#ef4444';
+                endInput.style.boxShadow   = '0 0 0 2px rgba(239,68,68,0.3)';
+                valid = false;
+            } else if (end <= start) {
+                endMsg.textContent   = '❌ End date must be after start date.';
+                endMsg.style.cssText = 'color:#ef4444;font-size:12px;margin-top:4px;display:block;';
+                endInput.style.borderColor = '#ef4444';
+                endInput.style.boxShadow   = '0 0 0 2px rgba(239,68,68,0.3)';
+                valid = false;
+            } else {
+                endMsg.style.display       = 'none';
+                endInput.style.borderColor = '#22c55e';
+                endInput.style.boxShadow   = '0 0 0 2px rgba(34,197,94,0.3)';
+            }
+        }
+
+        return valid;
+    }
+
+    function validateDatesOnSubmit() {
+        return validateDates();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('start_date').addEventListener('change', validateDates);
+        document.getElementById('end_date').addEventListener('change', validateDates);
+    });
+</script>
+{% endblock %}
